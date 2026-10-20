@@ -53,8 +53,11 @@ evidence_weights = {
     "negation": 0.25,
     "human": 0.20
 }
+ssn_registry = {}
 memory_list = []
 sentiment_memory_list = []
+victim_and_perp = []
+ssn_numbers = []
 min_weight = 0.05
 max_weight = 0.65
 small_learning_rate = 0.005
@@ -68,7 +71,6 @@ norm_memory_weight = 0.4
 lookback_window = 5
 negation_score = 0
 human_score = 0
-sentiment_memory_list = []
 current_scores = 0
 memory_cycle_counter = 0
 
@@ -148,14 +150,12 @@ print("[VERSION: 0.8.8]")
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
 def retrieve_memories(memory_list, victim, perp):
-    if not victim and not perp:
+    if not victim or not perp:
         return []
     return [
         memory
         for memory in memory_list
-        if memory["victim"] == victim and memory["victim"] is not None
-        and memory["perp"] == perp and memory["perp"] is not None
-        
+        if memory.get("victim") == victim and memory.get("perp") == perp       
     ]
 
 # Shutdown Sequence 
@@ -240,11 +240,9 @@ while True:
                         human_score -= 60
                         break
                     else:
-                        if is_human == False:
-                            victim = prev_word
-                            break
-                        else:
-                            victim = is_human
+                        if is_human != False:
+                            perp = is_human
+                            victim_and_perp.append(perp)
                             break
 
             # Non-Human Backward Subject Handling      
@@ -275,11 +273,9 @@ while True:
                         human_score -= 60
                         break
                     else:
-                        if is_human == False:
-                            perp = prev_word
-                            break
-                        else:
-                            perp = is_human
+                        if is_human != False:
+                            victim = is_human
+                            victim_and_perp.append(victim)
                             break
 
         # Modal Word Detection
@@ -356,19 +352,26 @@ while True:
         classification = "NULL_THREAT"
 
     print(f"[CONFIDENCE SCORE]: {total_score}\n[CLASSIFICATION]: {classification}")
-    if classification in ("RELEVANT", "IRRELEVANT"):
-        area =  random.randint(900,999)
-        group = random.randint(1,99)
-        serial = random.randint(1, 9999)
-        print(f"[NUMBER]: {area:03d}-{group:02d}-{serial:04d}") 
-    feedback = input("[WAS THE CLASSIFICATION WRONG? (Y/N)]: ").strip().lower()
+    import random
 
+    if classification in ("RELEVANT", "IRRELEVANT"):
+        for role, name in (("VICTIM", victim), ("PERPETRATOR", perp)):
+            if not name:
+                print(f"[NUMBER - {role}]: UNRESOLVED")
+                continue
+            key = " ".join(name.lower().split())
+            if key not in ssn_registry:
+                ssn_registry[key] = (f"{random.randint(900, 999)}-"
+                                    f"{random.randint(1, 99):02d}-"
+                                    f"{random.randint(1, 9999):04d}")
+            print(f"[NUMBER - {role}]: {ssn_registry[key]}")
+
+    feedback = input("[WAS THE CLASSIFICATION WRONG? (Y/N)]: ").lower()
     if feedback == "y":
         correct_classification = input(
             "[CORRECT CLASSIFICATION - "
             "RELEVANT / IRRELEVANT / NULL_THREAT]: "
         ).strip().upper()
-
         learning_rate = large_learning_rate
     else:
         correct_classification = classification
@@ -424,7 +427,7 @@ while True:
     save_state()
 
     # Showing Reasoning behind Score
-    print("[ACCUMULATORS]", end="\n\n")
+    print("[ACCUMULATORS]\n\n")
     print(f"[VICTIM]: {victim}")
     print(f"[PERPETRATOR]: {perp}")
     print(f"[COMBINED EVIDENCE]: {combined_evidence_score:.0f}")
@@ -451,7 +454,7 @@ while True:
         "score": total_score,
         "victim": victim,
         "perp": perp,
-        "time": current_time
+        "time": current_time,
         
     }
     if total_score >= irrelevant_threshold:
