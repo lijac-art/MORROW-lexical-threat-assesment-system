@@ -9,9 +9,24 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from nltk import ne_chunk
 from nltk.tree import Tree
-import builtins
 import spacy
 from datetime import datetime
+
+# Print Typewriter effect
+def typewriter_print(text, delay=0.02):
+    for char in text:
+        print(char, end="", flush=True) 
+        time.sleep(delay)
+    print()
+
+# Input Typewriter effect
+def typewriter_input(text, delay=0.02):
+    for char in text:
+        print(char, end="", flush=True) 
+        time.sleep(delay)
+    print("", end="")
+    user_response = input() 
+    return user_response
 
 # Declaring Essential NLTK dependencies
 nltk_packages = [
@@ -32,17 +47,17 @@ for category, package in nltk_packages:
         try:
             nltk.download(package, quiet=True)
         except OSError:
-            print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
+            typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
             sys.exit()
 
 # Importanting NLP dependencies
 nlp = spacy.load("en_core_web_sm")
 
-# Declaring Variables
+# Declaring Variables, Lists, and Dictionaries
 danger = ["murder", "kill", "stab", "injure", "threaten", "hurt", "ammunition",
           "ammo", "explosives", "grenade", "bomb", "toxic", "gas", "poison",
           "radioactive", "weapon", "gun", "guns", "massacre", "kills",
-          "killing", "shoot", "eliminate", "destroy"]
+          "killing", "shoot", "eliminate", "destroy", "threaten"]
 negation_words = ["no", "not", "never", "n't"]
 human_keywords = ["human", "person", "people", "individual", "president", 
                   "leader", "counsel", "minister", "king", "monarch", 
@@ -63,6 +78,7 @@ max_weight = 0.65
 small_learning_rate = 0.005
 large_learning_rate = 0.1
 memory_length = 50000
+time_of_load = datetime.now().strftime("%I:%M:%S")
 relevant_threshold = 80
 irrelevant_threshold = 60
 null_threshold = 25
@@ -92,11 +108,11 @@ def load_state():
         norm_memory_weight = state.get("norm_memory_weight", norm_memory_weight)
         norm_current_weight = state.get("norm_current_weight", norm_current_weight)
         memory_cycle_counter = state.get("memory_cycle_counter", memory_cycle_counter)
-        print("[MEMORY LOADED SUCCESSFULLY]")
+        typewriter_print("[MEMORY LOADED SUCCESSFULLY]")
     except FileNotFoundError:
-        print("[NO PREVIOUS MEMORY FOUND]")
+        typewriter_print("[NO PREVIOUS MEMORY FOUND]")
     except json.JSONDecodeError:
-        print("[MEMORY FILE CORRUPT - STARTING FRESH]")
+        typewriter_print("[MEMORY FILE CORRUPT - STARTING FRESH]")
 
 def save_state():
     state = {
@@ -115,7 +131,7 @@ def calculate_score(text):
     scores = sia.polarity_scores(text)
     if not sentiment_memory_list:
         if scores['pos'] > scores['neg']:
-            current_scores = -round(scores['pos'] * 35)
+            current_scores = -round(scores['pos'] * 40)
             sentiment_memory_list.append(current_scores)
             return current_scores
         elif scores['neg'] > scores['pos']:
@@ -128,7 +144,7 @@ def calculate_score(text):
 # Sarcasm Detection
     previous_score = sentiment_memory_list[-1]  
     if scores['pos'] > scores['neg']:
-        new_calculated_score = -round(scores['pos'] * 35)
+        new_calculated_score = -round(scores['pos'] * 40)
         sentiment_memory_list.append(new_calculated_score)
     elif scores['neg'] > scores['pos']:
         new_calculated_score = round(scores['neg'] * 110)
@@ -136,16 +152,18 @@ def calculate_score(text):
     else:
         return scores['compound']
     difference = abs(new_calculated_score - previous_score)
-    if difference >= 25 and None not in (victim, perp):
-        new_calculated_score *= -0.5
-        sentiment_memory_list.append(new_calculated_score)
-        return new_calculated_score
+    if difference >= 30:
+        if perp in victim_and_perp or victim in victim_and_perp and None not in (victim,perp):
+            new_calculated_score *= -0.75
+            sentiment_memory_list.append(new_calculated_score)
+            return new_calculated_score
     return new_calculated_score
 
 # Welcoming User
-print("[MORROW]:\n")
-print("[THREAT ANALYSIS ENGINE]")
-print("[VERSION: 0.8.8]")
+typewriter_print("[MORROW]:\n")
+typewriter_print("[THREAT ANALYSIS ENGINE]")
+typewriter_print("[VERSION: 0.9.1]")
+typewriter_print(f"[APPROXIMATE TIME]: {time_of_load}")
 
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
@@ -160,36 +178,41 @@ def retrieve_memories(memory_list, victim, perp):
 
 # Shutdown Sequence 
 def shutdown_sequence():
-    request = input("[0 TO CONTINUE OPERATIONS, 1 TO INITIATE SHUTDOWN]: ")
+    request = typewriter_input("[0 TO CONTINUE OPERATIONS, 1 TO INITIATE SHUTDOWN]: ")
     if request == "1":
         delay = round(random.uniform(5, 10))
-        print("[INITIATING ATEXIT]")
+        typewriter_print("[INITIATING ATEXIT]")
         time.sleep(delay/3)
-        print("[TERMINATING INSTANCES]")
+        typewriter_print("[TERMINATING INSTANCES]")
         time.sleep(delay/3)
-        print("[PURGING MEMORY HEAP]")
+        typewriter_print("[PURGING MEMORY HEAP]")
         time.sleep(delay/3)
-        print("[BEGINGING JSON SERALIZATION]")
+        typewriter_print("[BEGINNGING JSON SERALIZATION]")
         save_state()
+        typewriter_print("[SYSTEM SHUTDOWN WITH CODE 0]")
         sys.exit(0)
 
-    print("[CONTINUING OPERATIONS]")
+    typewriter_print("[CONTINUING OPERATIONS]")
 
 load_state()
 
 while True:
+    victim_and_perp.clear()
     terms_verbs = 0
     intent_score = 0
     negation_score = 0
     danger_word_score = 0
     human_score = 0
+    full_name = None
     victim = None
-    perp = None  
-    current_time = datetime.now().strftime("%I:%M %p")
+    perp = None
+    victim_identify = None
+    perp_identify = None
+    is_human = False
     shutdown_sequence()
 
     # Inputting Text
-    norm_sentence = input("[I/O STREAM INPUT]: ")
+    norm_sentence = typewriter_input("[I/O STREAM INPUT]: ")
     doc = nlp(norm_sentence)
     punctuation = str.maketrans("", "", ".,?!:" + "0123456789")
     new_sentence = norm_sentence.translate(punctuation)
@@ -200,7 +223,7 @@ while True:
 
     for i, (word, tag) in enumerate(tags):
         if word.lower() in danger:
-            danger_word_score = min(danger_word_score + 40, 100)
+            danger_word_score = min(danger_word_score + 60, 180)
 
             # Negation Handling
             start_index = max(0, i - lookback_window)
@@ -213,54 +236,74 @@ while True:
             if negation_word % 2 != 0:
                  parent_word = doc[i].head 
                  if parent_word.pos_ == "VERB":
-                    negation_score -= 40
+                    negation_score -= 100
 
-            # Non-Human Forward Subject Handling
+            # Non-Human Forward Subject Handling (Victim Check)
+            human_found = False
             end_index = min(len(tags), i + 1 + lookback_window)
             for next_idx in range(i + 1, end_index):
                 prev_word, prev_tag = tags[next_idx]
                 is_human = False
                 for chunk in entities:
                     if isinstance(chunk, Tree) and chunk.label() == 'PERSON':
-                        full_name = is_human = " ".join([leaf[0] for leaf in chunk.leaves()])
-                        if prev_word in full_name:
-                            is_human = full_name
-                            break
+                        name_parts = [leaf[0] for leaf in chunk.leaves()]
+                        full_name = " ".join(name_parts)
+                        if prev_word not in name_parts:
+                            continue
+                        if full_name == perp:
+                            continue
+                        is_human = full_name
+                        break
                     else:
                         is_human = False
                 prev_word, prev_tag = tags[next_idx]
                 prev_word_lower = prev_word.lower()
-                human_pronoun = prev_word_lower in ["she", "her", "he", "him", "us", "them", "mine", "you", "his", "our", "their", "guy", "someone", "anyone", "everyone", "boy", "girl", "women", "man", "child", "adult", "friend"]
+                human_pronoun = prev_word_lower in ["she", "her", "he", "him", "us", "them", "mine", "you", "his", "our", 
+                                                     "guy", "someone", "anyone", "everyone", "boy", "girl", "women", "man", 
+                                                     "child", "adult", "friend", "their", "me", "intruder", "president", "leader", "prime minister"]
                 human_noun = (
                     prev_tag in ["NN", "NNS", "NNP"]
                     and prev_word_lower in human_keywords
                 )
                 if prev_tag in ["NN", "NNS", "NNP", "NNPS", "PRP", "PRP$"]:
                     if not human_pronoun and not human_noun and not is_human:
-                        human_score -= 60
-                        break
+                        human_found = False
                     else:
-                        if is_human != False:
-                            perp = is_human
-                            victim_and_perp.append(perp)
+                        if perp != is_human:
+                            victim = is_human
+                            victim_identify = is_human
+                            victim_and_perp.append(victim)
+                            human_found = True
                             break
+                        else:
+                            victim = prev_word
+                            victim_and_perp.append(victim)
+                            human_found = True
+                            break
+            if human_found == False:
+                human_score -= 150
 
-            # Non-Human Backward Subject Handling      
+            # Non-Human Backward Subject Handling (Perp Check)
+            human_found = False      
             for next_idx in range(i - 1, max(-1, i - 1 - lookback_window), -1):
-                is_human = False
                 prev_word, prev_tag = tags[next_idx]
+                is_human = False
                 for chunk in entities:
                     if isinstance(chunk, Tree) and chunk.label() == 'PERSON':
-                        full_name = is_human = " ".join([leaf[0] for leaf in chunk.leaves()])
-                        if prev_word in full_name:
-                            is_human = full_name
-                            break
+                        name_parts = [leaf[0] for leaf in chunk.leaves()]
+                        full_name = " ".join(name_parts)
+                        if prev_word not in name_parts:
+                            continue
+                        if full_name == victim:
+                            continue
+                        is_human = full_name
+                        break
                     else:
                         is_human = False
                 prev_word, prev_tag = tags[next_idx]
                 prev_word_lower = prev_word.lower()
-                human_pronoun = prev_word_lower in ["i", "me", "my", "mine", "myself", "you", "your", "yours", "yourself",
-                                                     "he", "him", "his", "himself", "she", "her", "hers", "herself", 
+                human_pronoun = prev_word_lower in ["i", "my", "myself", "you", "your", "yourself",
+                                                    "he", "him", "his", "himself", "she", "her", "hers", "herself", 
                                                     "we", "us", "our", "ours", "ourselves", "they", "them",
                                                       "their", "theirs", "themselves", "guy", "someone", "man",
                                                         "women", "boy", "girl", "child", "adult", "friend"]
@@ -270,14 +313,22 @@ while True:
                 )
                 if prev_tag in ["NN", "NNS", "NNP", "NNPS", "PRP", "PRP$"]:
                     if not human_pronoun and not human_noun and not is_human:
-                        human_score -= 60
-                        break
+                        human_found = False
                     else:
-                        if is_human != False:
-                            victim = is_human
-                            victim_and_perp.append(victim)
+                        if victim != is_human:
+                            perp = is_human
+                            perp_identify = is_human
+                            victim_and_perp.append(perp)
+                            human_found = True
                             break
-
+                        else:
+                            perp = prev_word
+                            victim_and_perp.append(perp)
+                            human_found = True
+                            break
+            if human_found == False:
+                human_score -= 150
+                        
         # Modal Word Detection
         if i > 0:
             prev_word, prev_tag = tags[i - 1]
@@ -290,11 +341,11 @@ while True:
                 terms_verbs += 1
 
                 if word.lower() in ["will", "'ll", "must"]:
-                    intent_score += 20
+                    intent_score += 25
                 elif word.lower() in ["shall"]:
-                    intent_score += 15
+                    intent_score += 20
                 elif word.lower() in ["could", "may", "might", "would"]:
-                    intent_score += 5
+                    intent_score += 15
 
     # Calculating Individual Scores
     related_memories = retrieve_memories(
@@ -351,27 +402,48 @@ while True:
     else:
         classification = "NULL_THREAT"
 
-    print(f"[CONFIDENCE SCORE]: {total_score}\n[CLASSIFICATION]: {classification}")
-    import random
+    typewriter_print(f"[CONFIDENCE SCORE]: {total_score:.3f}\n[CLASSIFICATION]: {classification}")
 
+    # Person Of Interest SSN numbers
     if classification in ("RELEVANT", "IRRELEVANT"):
-        for role, name in (("VICTIM", victim), ("PERPETRATOR", perp)):
-            if not name:
-                print(f"[NUMBER - {role}]: UNRESOLVED")
-                continue
-            key = " ".join(name.lower().split())
-            if key not in ssn_registry:
-                ssn_registry[key] = (f"{random.randint(900, 999)}-"
-                                    f"{random.randint(1, 99):02d}-"
-                                    f"{random.randint(1, 9999):04d}")
-            print(f"[NUMBER - {role}]: {ssn_registry[key]}")
+        if perp_identify is not None or victim_identify is not None:
+            if victim_identify in ssn_registry:
+                ssn_number = ssn_registry[victim_identify]
+            elif perp_identify in ssn_registry:
+                ssn_number = ssn_registry[perp_identify]
+            else:
+                area = random.randint(900, 999)
+                group = random.randint(1, 99)
+                serial = random.randint(1, 9999)
+                ssn_number = f"{area}-{group:02d}-{serial:04d}"
 
-    feedback = input("[WAS THE CLASSIFICATION WRONG? (Y/N)]: ").lower()
+                # Random SSN number generation        
+                if victim_identify is not None and perp_identify is not None:
+                    choice = random.randint(1, 2)
+                    if choice == 1:
+                        ssn_registry[victim_identify] = ssn_number
+                        choice = 2
+                    else:
+                        ssn_registry[perp_identify] = ssn_number
+                        choice = 1  
+                elif victim_identify is not None:
+                    ssn_registry[victim_identify] = ssn_number
+                    choice = 2
+                elif perp_identify is not None:
+                    ssn_registry[perp_identify] = ssn_number
+                    choice = 1
+                else:
+                    typewriter_print("[NOT ABLE TO DETECT PERPETRATOR OR VICTIM]")    
+
+            typewriter_print(f"[SOCIAL SECURITY NUMBER]: {ssn_number}")
+            
+    # Feedback and updating weights
+    feedback = typewriter_input("[WAS THE CLASSIFICATION WRONG? (Y/N)]: ").lower()
     if feedback == "y":
-        correct_classification = input(
+        correct_classification = typewriter_input(
             "[CORRECT CLASSIFICATION - "
             "RELEVANT / IRRELEVANT / NULL_THREAT]: "
-        ).strip().upper()
+        ).upper()
         learning_rate = large_learning_rate
     else:
         correct_classification = classification
@@ -418,28 +490,29 @@ while True:
                 )
             )
 
-            print(
+            typewriter_print(
                 f"[{feature.upper()} WEIGHT]: "
                 f"{old_weight:.3f} -> "
                 f"{evidence_weights[feature]:.3f}"
             )
-            
+
     save_state()
 
     # Showing Reasoning behind Score
-    print("[ACCUMULATORS]\n\n")
-    print(f"[VICTIM]: {victim}")
-    print(f"[PERPETRATOR]: {perp}")
-    print(f"[COMBINED EVIDENCE]: {combined_evidence_score:.0f}")
-    print(f"[NEGATION ADJUSTMENT]: {negation_score:.0f}")
-    print(f"[INTENT EVIDENCE]: {intent_score:.0f}")
-    print(f"[DANGER EVIDENCE]: {danger_word_score:.0f}")
-    print(f"[PRONOUN EVIDENCE]: {human_score}")
-    print(f"[MEMORY SENTIMENT]: {score_one:.0f}")
-    print(f"[CURRENT SENTIMENT]: {score_two:.0f}")
-    print(f"[MEMORY WEIGHT]: {norm_memory_weight:.3f}")
-    print(f"[CURRENT WEIGHT]: {norm_current_weight:.3f}")
-    print(f"[TIME]: {current_time}")
+    typewriter_print("[ACCUMULATORS]\n\n")
+    typewriter_print(f"[VICTIM]: {victim}")
+    typewriter_print(f"[PERPETRATOR]: {perp}")
+    typewriter_print(f"[COMBINED EVIDENCE]: {combined_evidence_score:.0f}")
+    typewriter_print(f"[NEGATION ADJUSTMENT]: {negation_score:.0f}")
+    typewriter_print(f"[INTENT EVIDENCE]: {intent_score:.0f}")
+    typewriter_print(f"[DANGER EVIDENCE]: {danger_word_score:.0f}")
+    typewriter_print(f"[PRONOUN EVIDENCE]: {human_score}")
+    typewriter_print(f"[MEMORY SENTIMENT]: {score_one:.0f}")
+    typewriter_print(f"[CURRENT SENTIMENT]: {score_two:.0f}")
+    typewriter_print(f"[MEMORY WEIGHT]: {norm_memory_weight:.3f}")
+    typewriter_print(f"[CURRENT WEIGHT]: {norm_current_weight:.3f}")
+    current_time = datetime.now().strftime("%I:%M:%S")
+    typewriter_print(f"[TIME]: {current_time}")
 
     # Saving Important Memories
     memory = {
