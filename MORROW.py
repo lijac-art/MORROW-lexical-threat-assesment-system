@@ -178,8 +178,8 @@ def retrieve_memories(memory_list, victim, perp):
 
 # Shutdown Sequence 
 def shutdown_sequence():
-    request = typewriter_input("[0 TO CONTINUE OPERATIONS, 1 TO INITIATE SHUTDOWN]: ")
-    if request == "1":
+    request = typewriter_input("[1 TO CONTINUE OPERATIONS, 0 TO INITIATE SHUTDOWN]: ")
+    if request == "0":
         delay = round(random.uniform(5, 10))
         typewriter_print("[INITIATING ATEXIT]")
         time.sleep(delay/3)
