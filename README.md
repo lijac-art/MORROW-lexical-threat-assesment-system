@@ -1,1 +1,3 @@
-To use the file open the file and click open which opens a terminal press zero to shutdown the code and one to continue to run afterwards enter your sentences
+MORROW
+
+MORROW lexical analysis software which uses NLTK, spacy, negation, subject detection, and sentiment analysis to show levels of threats based off the tv show person of interest specifically its heavy use of a program called the machine.
