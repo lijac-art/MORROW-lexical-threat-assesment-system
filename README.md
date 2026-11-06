@@ -4,3 +4,13 @@ MORROW lexical analysis software which uses NLTK, Spacy, negation, subject detec
 
 Age of creator: 13
 Please refrain from spamming, and please give useful suggestions for my project.
+
+How to use:
+
+Install NLTK and Spacy via:
+
+MacOS pip3 install nltk, pip3 install spacy
+
+Windows pip install nltk, pip install spacy
+
+Open the file then proceed to run the file.
