@@ -13,7 +13,7 @@ from nltk.tree import Tree
 import spacy
 from datetime import datetime
 
-# Declaring Constant Variables, Lists, Dictonaries and Dependencies
+# Declaring Constant Variables, Lists, Dictonaries, and Dependencies
 MATRIX_STYLE = "\033[0;38;2;51;255;51m"
 RESET = "\033[0m"
 MIN_WEIGHT = 0.05
@@ -23,7 +23,7 @@ LARGE_LEARNING_RATE = 0.1
 MEMORY_LENGTH = 50000
 RELEVANT_THRESHOLD = 80
 IRRELEVANT_THRESHOLD = 60
-NULL_THRESHOLD = 25
+NULL_THRESHOLD = 20
 NORM_CURRENT_WEIGHT = 0.6
 NORM_MEMORY_WEIGHT = 0.4
 LOOKBACK_WINDOW = 5
@@ -40,7 +40,7 @@ HUMAN_KEYWORDS = ["human", "person", "people", "individual", "president",
                   "governor", "senator", "mayor"]
 NLP = spacy.load("en_core_web_md")
 
-# Declaring Standard Variables, Lists, Dictonaries and Dependencies
+# Declaring Standard Variables, Lists, Dictonaries, and Dependencies
 evidence_weights = {
     "intent": 0.15,
     "danger": 0.40,
@@ -102,7 +102,6 @@ for category, package in nltk_packages:
 
 # Save File Setup
 STATE_FILE = Path(__file__).with_name("MORROW_MEMORY.json")
-
 def load_state():
     global memory_list, evidence_weights
     global NORM_MEMORY_WEIGHT, NORM_CURRENT_WEIGHT, memory_cycle_counter
@@ -328,7 +327,13 @@ while True:
                             break
                         elif (prev_word_lower in human_pronoun or human_noun) and prev_word_lower != str(perp).lower():
                             victim = prev_word
-                            victim_identify = full_name if prev_tag in ["NNP", "NNPS"] else None
+                            if prev_tag in ["NNP", "NNPS"]:
+                                if full_name:
+                                    victim_identify = full_name 
+                                else: 
+                                    victim_identify = None
+                            else: 
+                                victim_identify = None
                             victim_and_perp.append(victim)
                             human_found = True
                             break
@@ -389,7 +394,13 @@ while True:
                             break
                         elif (prev_word_lower in human_pronoun or human_noun) and prev_word_lower != str(victim).lower():
                             perp = prev_word
-                            perp_identify = full_name if prev_tag in ["NNP", "NNPS"] else None
+                            if prev_tag in ["NNP", "NNPS"]:
+                                if full_name:
+                                    perp_identify = full_name 
+                                else:
+                                    perp_identify = full_name
+                            else: 
+                                perp_identify = None
                             victim_and_perp.append(perp)
                             human_found = True
                             break
@@ -487,7 +498,7 @@ while True:
                 ssn_number = f"{AREA}-{GROUP:02d}-{SERIAL:04d}"
 
                 # Random SSN number generation        
-                if victim_identify is not None and perp_identify is not None:
+                if None not in (victim_identify, perp_identity):
                     choice = random.randint(1, 2)
                     if choice == 1:
                         ssn_registry[victim_identify] = ssn_number
