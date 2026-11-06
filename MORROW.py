@@ -250,7 +250,6 @@ while True:
             if any(person_synset in path for path in syn.hypernym_paths()):
                 human_pronoun.append(word.lower())
                 break
-
     for token in doc:
         if token.lemma_.lower() in DANGER:
             danger_word_score = min(danger_word_score + 80, 240)
@@ -280,7 +279,6 @@ while True:
 
             # Non-Human Forward Subject Handling (Victim Check)
             human_found = False
-
             end_index = min(len(tags), i + 1 + LOOKBACK_WINDOW)
             for next_idx in range(i + 1, end_index):
                 prev_word, prev_tag = tags[next_idx]
@@ -413,7 +411,7 @@ while True:
                 human_score -= 120
                 human_found = False
                             
-            # Modal Word Detection
+        # Modal Word Detection
         if i > 0:
             prev_word, prev_tag = tags[i - 1]
             valid_victim = (
@@ -440,7 +438,6 @@ while True:
     # Adjusting Memory Weights
     NORM_MEMORY_WEIGHT = 0.4 * len(related_memories)/ (len(related_memories) + 20)
     NORM_CURRENT_WEIGHT = 1.0 - NORM_MEMORY_WEIGHT
-
     if related_memories:
         score_one = sum(
             memory["sentiment"]
@@ -448,7 +445,6 @@ while True:
         ) / len(related_memories)
     else:
         score_one = 0
-
     score_two = calculate_score(norm_sentence)
     combined_evidence_score = (intent_score * evidence_weights["intent"]) + (danger_word_score * evidence_weights["danger"]) + (negation_score * evidence_weights["negation"]) + (human_score * evidence_weights["human"]) 
 
@@ -469,7 +465,6 @@ while True:
     distance_to_relevant = abs(total_score - RELEVANT_THRESHOLD)
     distance_to_irrelevant = abs(total_score - IRRELEVANT_THRESHOLD)
     distance_to_null_threat = abs(total_score - NULL_THRESHOLD)
-
     if distance_to_relevant == min(
         distance_to_relevant,
         distance_to_irrelevant,
@@ -484,7 +479,6 @@ while True:
         classification = "IRRELEVANT"
     else:
         classification = "NULL_THREAT"
-
     typewriter_print(f"[CONFIDENCE SCORE]: {total_score:.3f}%\n[CLASSIFICATION]: {classification}")
 
     # Person Of Interest SSN numbers
@@ -514,7 +508,6 @@ while True:
                     choice = 1
                 else:
                     typewriter_print("[NOT ABLE TO DETECT PERPETRATOR OR VICTIM]")    
-
             typewriter_print(f"[SOCIAL SECURITY NUMBER]: {ssn_number}")
             
     # Feedback and updating weights
@@ -528,28 +521,23 @@ while True:
     else:
         correct_classification = classification
         learning_rate = SMALL_LEARNING_RATE
-
     target_scores = {
         "RELEVANT": RELEVANT_THRESHOLD,
         "IRRELEVANT": IRRELEVANT_THRESHOLD,
         "NULL_THREAT": NULL_THRESHOLD
     }
-
     target_score = target_scores.get(
         correct_classification,
         total_score
     )
-
     error = target_score - total_score
     error_normalized = error / 100
-
     feature_values = {
         "intent": intent_score,
         "danger": danger_word_score,
         "negation": negation_score,
         "human": human_score
     }
-
     for feature, value in feature_values.items():
         if value != 0:
             old_weight = evidence_weights[feature]
@@ -560,7 +548,6 @@ while True:
                 * error_normalized
                 * direction
             )
-
             evidence_weights[feature] += adjustment
             evidence_weights[feature] = max(
                 MIN_WEIGHT,
@@ -569,13 +556,11 @@ while True:
                     MAX_WEIGHT
                 )
             )
-
             typewriter_print(
                 f"[{feature.upper()} WEIGHT]: "
                 f"{old_weight:.3f} -> "
                 f"{evidence_weights[feature]:.3f}"
             )
-
     save_state()
 
     # Showing Reasoning behind Score
@@ -620,5 +605,4 @@ while True:
     # Keep memory list size capped within boundaries
     if len(memory_list) > MEMORY_LENGTH:
         memory_list.pop(0)
-
     save_state()
