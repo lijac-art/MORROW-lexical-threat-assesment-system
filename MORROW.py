@@ -57,6 +57,49 @@ negation_score = 0
 human_score = 0
 current_scores = 0
 memory_cycle_counter = 0
+perp_identity = None
+victim_identity = None
+
+# Print Typewriter effect
+def typewriter_print(text, delay=0.03):
+    print(MATRIX_STYLE, end="", flush=True)
+    for char in text:
+        print(char, end="", flush=True) 
+        time.sleep(delay) 
+    print(RESET)
+
+# Input Typewriter effect
+def typewriter_input(text, delay=0.03):
+    print(MATRIX_STYLE, end="", flush=True)
+    for char in text:
+        print(char, end="", flush=True) 
+        time.sleep(delay)
+    user_input = input(MATRIX_STYLE)
+    print(f"{RESET}", end="")
+    return user_input
+
+# Declaring Essential NLTK dependencies
+nltk_packages = [
+    ('tokenizers', 'punkt'),
+    ('tokenizers', 'punkt_tab'),
+    ('taggers', 'averaged_perceptron_tagger'),
+    ('taggers', 'averaged_perceptron_tagger_eng'),
+    ('sentiment', 'vader_lexicon'),
+    ('chunkers', 'maxent_ne_chunker'),
+    ('chunkers', 'maxent_ne_chunker_tab'),
+    ('corpora', 'words'),
+    ('corpora','omw-1.4'),
+    ('corpora','wordnet')
+]
+for category, package in nltk_packages:
+    try:
+        nltk.data.find(f"{category}/{package}")
+    except LookupError:
+        try:
+            nltk.download(package, quiet=True)
+        except OSError:
+            typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
+            sys.exit(11)
 
 # Print Typewriter effect
 def typewriter_print(text, delay=0.03, end="\n"):
