@@ -203,7 +203,7 @@ def calculate_score(text):
         new_calculated_score = -round(scores['pos'] * 40)
         sentiment_memory_list.append(new_calculated_score)
     elif scores['neg'] > scores['pos']:
-        new_calculated_score = round(scores['neg'] * 115)
+        new_calculated_score = round(scores['neg'] * 130)
         sentiment_memory_list.append(new_calculated_score)
     else:
         return scores['compound']
