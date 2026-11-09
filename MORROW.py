@@ -498,26 +498,26 @@ while True:
     NORM_MEMORY_WEIGHT = 0.4 * len(related_memories)/ (len(related_memories) + 20)
     NORM_CURRENT_WEIGHT = 1.0 - NORM_MEMORY_WEIGHT
     if related_memories:
-        score_one = sum(
+        memory_sentiment_score = sum(
             memory["sentiment"]
             for memory in related_memories
         ) / len(related_memories)
     else:
-        score_one = 0
-    score_two = calculate_score(norm_sentence)
+        memory_sentiment_score = 0
+    sentiment_score = calculate_score(norm_sentence)
     combined_evidence_score = (intent_score * evidence_weights["intent"]) + (danger_word_score * evidence_weights["danger"]) + (negation_score * evidence_weights["negation"]) + (human_score * evidence_weights["human"]) 
 
     # Scoring System
     total_score = 0
     if not related_memories:
         if combined_evidence_score > 0:
-            total_score = (score_two + combined_evidence_score)
+            total_score = (sentiment_score + combined_evidence_score)
         else:
-            total_score = score_two / 2
+            total_score = sentiment_score / 2
     elif combined_evidence_score > 0:
-        total_score = (NORM_MEMORY_WEIGHT * score_one + NORM_CURRENT_WEIGHT * score_two + combined_evidence_score)
+        total_score = (NORM_MEMORY_WEIGHT * memory_sentiment_score + NORM_CURRENT_WEIGHT * sentiment_score + combined_evidence_score)
     else:
-        total_score = (NORM_MEMORY_WEIGHT * score_one + NORM_CURRENT_WEIGHT * score_two) / 2
+        total_score = (NORM_MEMORY_WEIGHT * memory_sentiment_score + NORM_CURRENT_WEIGHT * sentiment_score) / 2
     total_score = max(0, min(total_score, 100))
 
     # Distance To Thresholds
@@ -631,8 +631,8 @@ while True:
     typewriter_print(f"[INTENT EVIDENCE]: {intent_score:.0f}")
     typewriter_print(f"[DANGER EVIDENCE]: {danger_word_score:.0f}")
     typewriter_print(f"[HUMAN EVIDENCE]: {human_score}")
-    typewriter_print(f"[MEMORY SENTIMENT]: {score_one:.0f}")
-    typewriter_print(f"[CURRENT SENTIMENT]: {score_two:.0f}")
+    typewriter_print(f"[MEMORY SENTIMENT]: {memory_sentiment_score:.0f}")
+    typewriter_print(f"[CURRENT SENTIMENT]: {sentiment_score:.0f}")
     typewriter_print(f"[MEMORY WEIGHT]: {NORM_MEMORY_WEIGHT:.3f}")
     typewriter_print(f"[CURRENT WEIGHT]: {NORM_CURRENT_WEIGHT:.3f}")
     current_time = datetime.now().strftime("%I:%M:%S")
@@ -640,7 +640,7 @@ while True:
     # Saving Important Memories
     memory = {
         "text": norm_sentence, 
-        "sentiment": score_two, 
+        "sentiment": sentiment_score, 
         "intent_evidence": intent_score, 
         "danger_evidence": danger_word_score, 
         "negation": negation_score, 
