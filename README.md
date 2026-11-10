@@ -19,7 +19,11 @@ MacOS, and Windows: python -m spacy download en_core_web_md
 Open the file, then proceed to run it.
 
 Known limitations:
- Note: Does not reliably detect sarcasm.
- Note: Other types of figurative language is not reliably checked.
- Note: Detecting reporting is not reliably checked.
- Note: Indirect threats do not currently work.
+
+Note: Does not reliably detect sarcasm.
+
+Note: Other types of figurative language is not reliably checked.
+
+Note: Detecting reporting is not reliably checked.
+
+Note: Indirect threats do not currently work.
