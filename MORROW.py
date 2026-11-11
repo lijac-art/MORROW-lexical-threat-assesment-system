@@ -187,7 +187,7 @@ def calculate_score(text):
     scores = sia.polarity_scores(text)
     if not sentiment_memory_list:
         if scores['pos'] > scores['neg']:
-            current_scores = -round(scores['pos'] * 40)
+            current_scores = -round(scores['pos'] * 45)
             sentiment_memory_list.append(current_scores)
             return current_scores
         elif scores['neg'] > scores['pos']:
@@ -200,7 +200,7 @@ def calculate_score(text):
 # Sarcasm Detection
     average_score = sum(sentiment_memory_list) / len(sentiment_memory_list)
     if scores['pos'] > scores['neg']:
-        new_calculated_score = -round(scores['pos'] * 40)
+        new_calculated_score = -round(scores['pos'] * 45)
         sentiment_memory_list.append(new_calculated_score)
     elif scores['neg'] > scores['pos']:
         new_calculated_score = round(scores['neg'] * 130)
@@ -209,7 +209,7 @@ def calculate_score(text):
         return scores['compound']
     difference = abs(new_calculated_score - average_score)
     if difference >= 50:
-        if perp in victim_and_perp or victim in victim_and_perp and victim_identity is not None or perp_identity is not None:
+        if perp in victim_and_perp or victim in victim_and_perp and victim is not None or perp is not None:
             new_calculated_score *= -0.8
             sentiment_memory_list.append(new_calculated_score)
             return new_calculated_score
@@ -218,7 +218,7 @@ def calculate_score(text):
 # Welcoming User
 typewriter_print("[MORROW]:\n")
 typewriter_print("[THREAT ANALYSIS ENGINE]")
-typewriter_print("[VERSION: 0.9.3.2]")
+typewriter_print("[VERSION: 0.9.3.3]")
 
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
