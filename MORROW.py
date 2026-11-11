@@ -21,7 +21,6 @@ MIN_WEIGHT = 0.05
 MAX_WEIGHT = 0.65
 SMALL_LEARNING_RATE = 0.005
 LARGE_LEARNING_RATE = 0.1
-MEMORY_LENGTH = 50000
 RELEVANT_THRESHOLD = 80
 IRRELEVANT_THRESHOLD = 60
 NULL_THRESHOLD = 20
@@ -169,6 +168,25 @@ def load_state():
         typewriter_print("[MEMORY FILE CORRUPT - STARTING FRESH]")
 
 def save_state():
+    # Do not recreate an empty JSON file immediately after midnight cleanup.
+    default_weights = {
+        "intent": 0.15,
+        "danger": 0.40,
+        "negation": 0.25,
+        "human": 0.20
+    }
+    has_saved_data = (
+        bool(memory_list)
+        or bool(sentiment_memory_list)
+        or bool(ssn_registry)
+        or memory_cycle_counter != 0
+        or evidence_weights != default_weights
+        or NORM_MEMORY_WEIGHT != 0.4
+        or NORM_CURRENT_WEIGHT != 0.6
+    )
+    if not has_saved_data:
+        return
+
     state = {
         "memory_list": memory_list,
         "evidence_weights": evidence_weights,
@@ -179,7 +197,7 @@ def save_state():
         "ssn_registry": ssn_registry
     }
 
-    with open(STATE_FILE, "w") as file:
+    with open(STATE_FILE, "w", encoding="utf-8") as file:
         json.dump(state, file, indent=4)
 
 # Sentiment Scoring
@@ -218,7 +236,7 @@ def calculate_score(text):
 # Welcoming User
 typewriter_print("[MORROW]:\n")
 typewriter_print("[THREAT ANALYSIS ENGINE]")
-typewriter_print("[VERSION: 0.9.3.3]")
+typewriter_print("[VERSION: 1.0.0]")
 
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
@@ -244,15 +262,67 @@ def shutdown_sequence():
         time.sleep(delay/3)
         typewriter_print("[BEGINNGING JSON SERALIZATION]")
         save_state()
+        clock_stop.set()
+        clock_thread.join(timeout=2)
         typewriter_print("[SYSTEM SHUTDOWN WITH CODE 0]")
         sys.exit(0)
 
     typewriter_print("[CONTINUING OPERATIONS]")
 load_state()
 
+# Midnight Memory Reset
+clock_stop = threading.Event()
+last_cleanup_date = datetime.now().date()
+
+def delete_daily_memories():
+    """Clear all saved memory and delete MORROW_MEMORY.json at midnight."""
+    global memory_cycle_counter, sentiment_memory_list, ssn_registry
+    global evidence_weights, NORM_CURRENT_WEIGHT, NORM_MEMORY_WEIGHT
+
+    memory_list.clear()
+    sentiment_memory_list.clear()
+    ssn_registry.clear()
+    memory_cycle_counter = 0
+    evidence_weights = {
+        "intent": 0.15,
+        "danger": 0.40,
+        "negation": 0.25,
+        "human": 0.20
+    }
+    NORM_CURRENT_WEIGHT = 0.6
+    NORM_MEMORY_WEIGHT = 0.4
+
+    try:
+        STATE_FILE.unlink()
+        typewriter_print("\n[MIDNIGHT CLEANUP: MORROW_MEMORY.JSON DELETED]")
+    except FileNotFoundError:
+        typewriter_print("\n[MIDNIGHT CLEANUP: MEMORY CLEARED; JSON FILE ALREADY ABSENT]")
+    except OSError as error:
+        typewriter_print(f"\n[MIDNIGHT CLEANUP ERROR: {error}]")
+
+def background_clock():
+    global last_cleanup_date
+    while not clock_stop.is_set():
+        now = datetime.now()
+
+        # Detect Day Change
+        if now.date() != last_cleanup_date:
+            delete_daily_memories()
+            last_cleanup_date = now.date()
+
+        current_time = now.strftime("%H:%M:%S")
+        sys.stdout.write("\033[s")
+        sys.stdout.write(f"\033[1;60H\033[K\033[93m[ {current_time} ]\033[0m")
+        sys.stdout.write("\033[u")
+        sys.stdout.flush()
+        clock_stop.wait(1)
+
+clock_thread = threading.Thread(target=background_clock, daemon=True)
+clock_thread.start()
+
 while True:
     victim_and_perp.clear()
-    terms_verbs = 0
+    verbs = 0
     intent_score = 0
     negation_score = 0
     danger_word_score = 0
@@ -269,26 +339,7 @@ while True:
     shutdown_sequence()
 
     # Inputting Text
-    input_received = threading.Event()
-
-    # Clock
-    def live_clock():
-        while not input_received.is_set():
-            time_of_load = datetime.now().strftime("%I:%M:%S")
-            sys.stdout.write(f"\033[s\n\r[APPROXIMATE TIME]: {time_of_load}\033[K\033[u")
-            sys.stdout.flush()
-            time.sleep(0.1)
-    while True:
-        input_received.clear()
-        clock_thread = threading.Thread(target=live_clock, daemon=True)
-        clock_thread.start()
-        norm_sentence = typewriter_input("[I/O STREAM INPUT]: ")
-        input_received.set()
-        clock_thread.join()
-        if norm_sentence:
-            break
-        sys.stdout.write("\r\033[K\033[A\r\033[K")
-        sys.stdout.flush()
+    norm_sentence = typewriter_input("[I/O STREAM INPUT]: ")
 
     # Tokenization 
     punctuation = str.maketrans("", "", ".,?!:" + "0123456789")
@@ -478,7 +529,7 @@ while True:
                 or prev_word.lower() in HUMAN_KEYWORDS
                 )
             if valid_victim and tag == "MD":
-                terms_verbs += 1
+                verbs += 1
 
                 if word.lower() in ["will", "'ll", "must"]:
                     intent_score += 30
@@ -635,7 +686,6 @@ while True:
     typewriter_print(f"[CURRENT SENTIMENT]: {sentiment_score:.0f}")
     typewriter_print(f"[MEMORY WEIGHT]: {NORM_MEMORY_WEIGHT:.3f}")
     typewriter_print(f"[CURRENT WEIGHT]: {NORM_CURRENT_WEIGHT:.3f}")
-    current_time = datetime.now().strftime("%I:%M:%S")
         
     # Saving Important Memories
     memory = {
@@ -650,17 +700,14 @@ while True:
         "score": total_score,
         "victim": victim,
         "perp": perp,
-        "time": current_time
         
     }
     if total_score >= IRRELEVANT_THRESHOLD:
         memory_list.append(memory)
         memory_cycle_counter += 1
-    elif terms_verbs >= 1:
+    elif verbs >= 1 and victim or perp:
             memory_list.append(memory)
             memory_cycle_counter += 1
 
     # Keep memory list size capped within boundaries
-    if len(memory_list) > MEMORY_LENGTH:
-        memory_list.pop(0)
     save_state()
