@@ -708,6 +708,4 @@ while True:
     elif verbs >= 1 and victim or perp:
             memory_list.append(memory)
             memory_cycle_counter += 1
-
-    # Keep memory list size capped within boundaries
     save_state()
