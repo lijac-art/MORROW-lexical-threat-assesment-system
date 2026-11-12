@@ -38,7 +38,7 @@ NEGATION_WORDS = ["no", "not", "never", "n't"]
 HUMAN_KEYWORDS = ["human", "person", "people", "individual", "president", 
                   "leader", "counsel", "minister", "king", "monarch", 
                   "governor", "senator", "mayor"]
-NLP = spacy.load("en_core_web_md")
+NLP = spacy.load("en_core_web_lg")
 
 # Declaring Standard Variables, Lists, Dictonaries, and Dependencies
 evidence_weights = {
@@ -168,7 +168,6 @@ def load_state():
         typewriter_print("[MEMORY FILE CORRUPT - STARTING FRESH]")
 
 def save_state():
-    # Do not recreate an empty JSON file immediately after midnight cleanup.
     default_weights = {
         "intent": 0.15,
         "danger": 0.40,
@@ -310,7 +309,7 @@ def background_clock():
             delete_daily_memories()
             last_cleanup_date = now.date()
 
-        current_time = now.strftime("%H:%M:%S")
+        current_time = now.strftime("%H:%M:%S %p")
         sys.stdout.write("\033[s")
         sys.stdout.write(f"\033[1;60H\033[K\033[93m[ {current_time} ]\033[0m")
         sys.stdout.write("\033[u")
@@ -347,10 +346,10 @@ while True:
     doc = NLP(new_sentence)
     tokenized_new_sentence = word_tokenize(new_sentence)
     words = new_sentence.split()
-    tags = nltk.pos_tag(tokenized_new_sentence)
+    nltk_tags = nltk.pos_tag(tokenized_new_sentence)
     spacy_tags = [(token.text, token.tag_) for token in doc]
     persons = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
-    entities = ne_chunk(tags)
+    entities = ne_chunk(nltk_tags)
     HUMAN_PRONOUN = []
 
     # Pronoun and Human Detection
@@ -371,7 +370,7 @@ while True:
                     HUMAN_PRONOUN.append(child.text.lower())
                 elif token.dep_ == "pobj" and token.head.text.lower() == "as":
                     HUMAN_PRONOUN.append(token.head.head.text.lower())
-    for i, (word, tag) in enumerate(tags):
+    for i, (word, tag) in enumerate(nltk_tags):
         if danger_word_found and doc[i].lemma_.lower() in DANGER:
 
             # Negation Handling
@@ -389,9 +388,9 @@ while True:
 
             # Non-Human Forward Subject Handling (Victim Check)
             human_found = False
-            end_index = min(len(tags), i + 1 + LOOKBACK_WINDOW)
+            end_index = min(len(nltk_tags), i + 1 + LOOKBACK_WINDOW)
             for next_idx in range(i + 1, end_index):
-                prev_word, prev_tag = tags[next_idx]
+                prev_word, prev_tag = nltk_tags[next_idx]
                 prev_word_lower = prev_word.lower()
                 for chunk in entities:
                     if isinstance(chunk, Tree) and chunk.label() == 'PERSON':
@@ -418,7 +417,7 @@ while True:
                             is_human = False
                     else:
                         is_human = False
-                prev_word, prev_tag = tags[next_idx]
+                prev_word, prev_tag = nltk_tags[next_idx]
                 human_noun = (
                     prev_tag in ["NN", "NNS", "NNP"]
                     and prev_word_lower in HUMAN_KEYWORDS
@@ -457,7 +456,7 @@ while True:
             # Non-Human Backward Subject Handling (Perp Check)
             human_found = False
             for next_idx in range(i - 1, max(-1, i - 1 - LOOKBACK_WINDOW), -1):
-                prev_word, prev_tag = tags[next_idx]
+                prev_word, prev_tag = nltk_tags[next_idx]
                 prev_word_lower = prev_word.lower()
                 for chunk in entities:
                     if isinstance(chunk, Tree) and chunk.label() == 'PERSON':
@@ -484,7 +483,7 @@ while True:
                             is_human = False
                     else:
                         is_human = False
-                prev_word, prev_tag = tags[next_idx]
+                prev_word, prev_tag = nltk_tags[next_idx]
                 prev_word_lower = prev_word.lower()
                 human_noun = (
                     prev_tag in ["NN", "NNS", "NNP"]
@@ -523,7 +522,7 @@ while True:
                             
         # Modal Word Detection
         if i > 0:
-            prev_word, prev_tag = tags[i - 1]
+            prev_word, prev_tag = nltk_tags[i - 1]
             valid_victim = (
                 prev_tag in ["NN", "NNS", "NNP", "NNPS", "PRP", "PRP$"]
                 or prev_word.lower() in HUMAN_KEYWORDS
