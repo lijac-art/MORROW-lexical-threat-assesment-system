@@ -60,21 +60,21 @@ perp_identity = None
 victim_identity = None
 
 # Print Typewriter effect
-def typewriter_print(text, delay=0.03):
+def typewriter_print(text, delay=0.03, end="\n"):
     print(MATRIX_STYLE, end="", flush=True)
     for char in text:
         print(char, end="", flush=True) 
         time.sleep(delay) 
-    print(RESET)
+    print(RESET, end=end)
 
 # Input Typewriter effect
-def typewriter_input(text, delay=0.03):
+def typewriter_input(text, delay=0.03, end="\n"):
     print(MATRIX_STYLE, end="", flush=True)
     for char in text:
         print(char, end="", flush=True) 
         time.sleep(delay)
     user_input = input(MATRIX_STYLE)
-    print(f"{RESET}", end="")
+    print(f"{RESET}", end=end)
     return user_input
 
 # Declaring Essential NLTK dependencies
@@ -99,24 +99,6 @@ for category, package in nltk_packages:
         except OSError:
             typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
             sys.exit(11)
-
-# Print Typewriter effect
-def typewriter_print(text, delay=0.03, end="\n"):
-    print(MATRIX_STYLE, end="", flush=True)
-    for char in text:
-        print(char, end="", flush=True) 
-        time.sleep(delay) 
-    print(RESET, end=end)
-
-# Input Typewriter effect
-def typewriter_input(text, delay=0.03, end="\n"):
-    print(MATRIX_STYLE, end="", flush=True)
-    for char in text:
-        print(char, end="", flush=True) 
-        time.sleep(delay)
-    user_input = input(MATRIX_STYLE)
-    print(f"{RESET}", end=end)
-    return user_input
 
 # Declaring Essential NLTK dependencies
 nltk_packages = [
