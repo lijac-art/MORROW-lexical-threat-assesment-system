@@ -41,21 +41,35 @@
             "victim": "doctor",
             "perp": "John",
             "time": "11:43:13"
+        },
+        {
+            "text": "Kill",
+            "sentiment": 130,
+            "intent_evidence": 0,
+            "danger_evidence": 80,
+            "negation": 0,
+            "pronoun adjustment": -240,
+            "combined_total_evidence": -16.066032,
+            "classification": "IRRELEVANT",
+            "score": 65.0,
+            "victim": null,
+            "perp": null
         }
     ],
     "evidence_weights": {
         "intent": 0.1490746,
-        "danger": 0.3991746,
+        "danger": 0.3989246,
         "negation": 0.25,
-        "human": 0.2
+        "human": 0.20025
     },
     "norm_memory_weight": 0.0,
     "norm_current_weight": 1.0,
-    "memory_cycle_counter": 3,
+    "memory_cycle_counter": 4,
     "sentiment_memory_list": [
         48,
         46,
-        62
+        62,
+        130
     ],
     "ssn_registry": {
         "John": "905-69-2835"

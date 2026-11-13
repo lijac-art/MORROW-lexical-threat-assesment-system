@@ -217,7 +217,7 @@ def calculate_score(text):
 # Welcoming User
 typewriter_print("[MORROW]:\n")
 typewriter_print("[THREAT ANALYSIS ENGINE]")
-typewriter_print("[VERSION: 1.0.0]")
+typewriter_print("[VERSION: 1.0.1]")
 
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
@@ -247,7 +247,6 @@ def shutdown_sequence():
         clock_thread.join(timeout=2)
         typewriter_print("[SYSTEM SHUTDOWN WITH CODE 0]")
         sys.exit(0)
-
     typewriter_print("[CONTINUING OPERATIONS]")
 load_state()
 
@@ -256,7 +255,6 @@ clock_stop = threading.Event()
 last_cleanup_date = datetime.now().date()
 
 def delete_daily_memories():
-    """Clear all saved memory and delete MORROW_MEMORY.json at midnight."""
     global memory_cycle_counter, sentiment_memory_list, ssn_registry
     global evidence_weights, NORM_CURRENT_WEIGHT, NORM_MEMORY_WEIGHT
 
@@ -290,17 +288,16 @@ def background_clock():
         if now.date() != last_cleanup_date:
             delete_daily_memories()
             last_cleanup_date = now.date()
-
-        current_time = now.strftime("%H:%M:%S %p")
+        current_time = now.strftime("%I:%M:%S %p")
         sys.stdout.write("\033[s")
         sys.stdout.write(f"\033[1;60H\033[K\033[93m[ {current_time} ]\033[0m")
         sys.stdout.write("\033[u")
         sys.stdout.flush()
         clock_stop.wait(1)
-
 clock_thread = threading.Thread(target=background_clock, daemon=True)
 clock_thread.start()
 
+# Main Python Script
 while True:
     victim_and_perp.clear()
     verbs = 0
@@ -316,7 +313,6 @@ while True:
     perp_identity = None
     is_human = False
     danger_word_found = False
-
     shutdown_sequence()
 
     # Inputting Text
