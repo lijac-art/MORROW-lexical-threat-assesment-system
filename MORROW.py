@@ -100,29 +100,6 @@ for category, package in nltk_packages:
             typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
             sys.exit(11)
 
-# Declaring Essential NLTK dependencies
-nltk_packages = [
-    ('tokenizers', 'punkt'),
-    ('tokenizers', 'punkt_tab'),
-    ('taggers', 'averaged_perceptron_tagger'),
-    ('taggers', 'averaged_perceptron_tagger_eng'),
-    ('sentiment', 'vader_lexicon'),
-    ('chunkers', 'maxent_ne_chunker'),
-    ('chunkers', 'maxent_ne_chunker_tab'),
-    ('corpora', 'words'),
-    ('corpora','omw-1.4'),
-    ('corpora','wordnet')
-]
-for category, package in nltk_packages:
-    try:
-        nltk.data.find(f"{category}/{package}")
-    except LookupError:
-        try:
-            nltk.download(package, quiet=True)
-        except OSError:
-            typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
-            sys.exit(11)
-
 # Save File Setup
 STATE_FILE = Path(__file__).with_name("MORROW_MEMORY.json")
 def load_state():
