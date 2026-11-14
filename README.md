@@ -12,7 +12,7 @@ Windows: pip install nltk, pip install spacy
 
 Install en_core_web_md:
 
-MacOS, and Windows: python -m spacy download en_core_web_md
+macOS and Windows: python -m spacy download en_core_web_md
 
 Open the file, then proceed to run it.
 
@@ -20,8 +20,8 @@ Known limitations:
 
 Note: Does not reliably detect sarcasm.
 
-Note: Other types of figurative language is not reliably checked.
+Note: Other types of figurative language are not reliably checked.
 
-Note: Detecting reporting is not reliably checked.
+Note: It does not reliably detect reporting.
 
 Note: Indirect threats do not currently work.
