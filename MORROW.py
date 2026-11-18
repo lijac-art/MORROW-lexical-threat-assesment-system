@@ -12,9 +12,9 @@ from nltk.corpus import wordnet as wn
 from nltk import ne_chunk
 from nltk.tree import Tree
 import spacy
-from datetime import datetime
+from datetime import datetime, timedelta
 
-# Declaring Constant Variables, Lists, Dictonaries, and Dependencies
+# Declaring Constant Variables, Lists, Dictonaries,and Dependencies
 MATRIX_STYLE = "\033[0;38;2;51;255;51m"
 RESET = "\033[0m"
 MIN_WEIGHT = 0.05
@@ -100,7 +100,7 @@ for category, package in nltk_packages:
             typewriter_print("[DEPENDENCIES FAILED TO LOAD INITIATING SHUTDOWN]")
             sys.exit(11)
 
-# Save File Setup
+# Loading State
 STATE_FILE = Path(__file__).with_name("MORROW_MEMORY.json")
 def load_state():
     global memory_list, evidence_weights
@@ -109,7 +109,6 @@ def load_state():
     try:
         with open(STATE_FILE, "r") as file:
             state = json.load(file)
-
         memory_list = state.get("memory_list", [])
         evidence_weights = {
             **evidence_weights,
@@ -126,6 +125,7 @@ def load_state():
     except json.JSONDecodeError:
         typewriter_print("[MEMORY FILE CORRUPT - STARTING FRESH]")
 
+# Saving State
 def save_state():
     default_weights = {
         "intent": 0.15,
@@ -158,9 +158,13 @@ def save_state():
     with open(STATE_FILE, "w", encoding="utf-8") as file:
         json.dump(state, file, indent=4)
 
-# Sentiment Scoring
-def calculate_score(text):
+sarcasm_time = None 
+def calculate_score(text, perp=None, victim=None):
+    global sarcasm_time
+    now = datetime.now()
     scores = sia.polarity_scores(text)
+    
+    # Initial sentiment calculation
     if not sentiment_memory_list:
         if scores['pos'] > scores['neg']:
             current_scores = -round(scores['pos'] * 45)
@@ -173,7 +177,7 @@ def calculate_score(text):
         else:
             return scores['compound']
         
-# Sarcasm Detection
+    # Sarcasm Detection
     average_score = sum(sentiment_memory_list) / len(sentiment_memory_list)
     if scores['pos'] > scores['neg']:
         new_calculated_score = -round(scores['pos'] * 45)
@@ -183,11 +187,16 @@ def calculate_score(text):
         sentiment_memory_list.append(new_calculated_score)
     else:
         return scores['compound']
+        
     difference = abs(new_calculated_score - average_score)
+    
     if difference >= 50:
-        if perp in victim_and_perp or victim in victim_and_perp and victim is not None or perp is not None:
+        more_than_30_mins = (sarcasm_time is None) or (now - sarcasm_time > timedelta(minutes=30))
+        valid_person = (perp is not None and perp in victim_and_perp) or (victim is not None and victim in victim_and_perp)
+        if valid_person and more_than_30_mins:
             new_calculated_score *= -0.8
             sentiment_memory_list.append(new_calculated_score)
+            sarcasm_time = now
             return new_calculated_score
     return new_calculated_score
 
@@ -230,11 +239,9 @@ load_state()
 # Midnight Memory Reset
 clock_stop = threading.Event()
 last_cleanup_date = datetime.now().date()
-
 def delete_daily_memories():
     global memory_cycle_counter, sentiment_memory_list, ssn_registry
     global evidence_weights, NORM_CURRENT_WEIGHT, NORM_MEMORY_WEIGHT
-
     memory_list.clear()
     sentiment_memory_list.clear()
     ssn_registry.clear()
@@ -247,7 +254,6 @@ def delete_daily_memories():
     }
     NORM_CURRENT_WEIGHT = 0.6
     NORM_MEMORY_WEIGHT = 0.4
-
     try:
         STATE_FILE.unlink()
         typewriter_print("\n[MIDNIGHT CLEANUP: MORROW_MEMORY.JSON DELETED]")
@@ -294,6 +300,8 @@ while True:
 
     # Inputting Text
     norm_sentence = typewriter_input("[I/O STREAM INPUT]: ")
+    now = datetime.now()
+    norm_sentence_time = now.strftime("%I:%M %p")
 
     # Tokenization 
     punctuation = str.maketrans("", "", ".,?!:" + "0123456789")
@@ -337,7 +345,7 @@ while True:
                 if prev_word in NEGATION_WORDS:
                     negation_word += 1
                     if negation_word % 2 != 0:
-                        parent_word = doc[i].head 
+                        parent_word = doc[i].head
                         if parent_word.pos_ == "VERB":
                             negation_score -= 30
 
