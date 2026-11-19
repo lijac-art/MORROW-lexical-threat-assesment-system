@@ -32,7 +32,8 @@ AREA = random.randint(900, 999)
 SERIAL = random.randint(1, 9999)
 NLP = spacy.load("en_core_web_lg")
 MATRIX_STYLE = "\033[0;38;2;51;255;51m"
-NEGATION_WORDS = ["no", "not", "never", "n't"]
+NEG_PREFIXES = ('un', 'in', 'im', 'il', 'ir', 'dis', 'non', 'mis', 'anti', 'de')
+NEGATION_WORDS = ["no", "not", "never", "n't", "none", "can't", "won't", "don't"]
 HUMAN_KEYWORDS = ["human", "person", "people", "individual", "president", 
                   "leader", "counsel", "minister", "king", "monarch", 
                   "governor", "senator", "mayor"]
@@ -90,6 +91,7 @@ nltk_packages = [
     ('corpora', 'words'),
     ('corpora','omw-1.4'),
     ('corpora','wordnet')
+
 ]
 for category, package in nltk_packages:
     try:
@@ -186,9 +188,7 @@ def calculate_score(text, perp=None, victim=None):
         sentiment_memory_list.append(new_calculated_score)
     else:
         return scores['compound']
-        
     difference = abs(new_calculated_score - average_score)
-    
     if difference >= 50:
         more_than_30_mins = (sarcasm_time is None) or (now - sarcasm_time > timedelta(minutes=60))
         valid_person = (perp is not None and perp in victim_and_perp) or (victim is not None and victim in victim_and_perp)
@@ -261,6 +261,7 @@ def delete_daily_memories():
     except OSError as error:
         typewriter_print(f"\n[MIDNIGHT CLEANUP ERROR: {error}]")
 
+# Background Clock
 def background_clock():
     global last_cleanup_date
     while not clock_stop.is_set():
@@ -313,6 +314,15 @@ while True:
     persons = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
     entities = ne_chunk(nltk_tags)
 
+    # Prefix Negation Detection
+    def prefix_negation_check(word):
+        word_lower = word.lower()
+        for prefix in NEG_PREFIXES:
+            if word_lower.startswith(prefix) and len(word_lower) > len(prefix) + 2:
+                root = word_lower[len(prefix):]
+                if wn.synsets(root):
+                    NEGATION_WORDS.append(word)
+
     # Pronoun and Human Detection
     person_synset = wn.synset("person.n.01")
     for word in words:
@@ -335,6 +345,7 @@ while True:
         if danger_word_found and doc[i].lemma_.lower() in DANGER:
 
             # Negation Handling
+            prefix_negation_check(doc[i])
             start_index = max(0, i - LOOKBACK_WINDOW)
             negation_word = 0
             for prev_idx in range(i - 1, start_index - 1, -1):
