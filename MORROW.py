@@ -1,63 +1,64 @@
 # Importing Necessary Libraries
+import sys
 import nltk
 import time
-import random
-import sys
 import json
+import spacy
+import random
 import threading
 from pathlib import Path
-from nltk.sentiment import SentimentIntensityAnalyzer
-from nltk.tokenize import word_tokenize
-from nltk.corpus import wordnet as wn
 from nltk import ne_chunk
 from nltk.tree import Tree
-import spacy
+from nltk.corpus import wordnet as wn
+from nltk.tokenize import word_tokenize
 from datetime import datetime, timedelta
+from nltk.sentiment import SentimentIntensityAnalyzer
 
 # Declaring Constant Variables, Lists, Dictonaries,and Dependencies
-MATRIX_STYLE = "\033[0;38;2;51;255;51m"
-RESET = "\033[0m"
 MIN_WEIGHT = 0.05
 MAX_WEIGHT = 0.65
-SMALL_LEARNING_RATE = 0.005
-LARGE_LEARNING_RATE = 0.1
-RELEVANT_THRESHOLD = 80
-IRRELEVANT_THRESHOLD = 60
-NULL_THRESHOLD = 20
-NORM_CURRENT_WEIGHT = 0.6
-NORM_MEMORY_WEIGHT = 0.4
+RESET = "\033[0m"
+HUMAN_PRONOUN = []
 LOOKBACK_WINDOW = 5
-AREA = random.randint(900, 999)
+NULL_THRESHOLD = 20
+RELEVANT_THRESHOLD = 80
+NORM_MEMORY_WEIGHT = 0.4
+NORM_CURRENT_WEIGHT = 0.6
+LARGE_LEARNING_RATE = 0.1
+IRRELEVANT_THRESHOLD = 60
+SMALL_LEARNING_RATE = 0.005
 GROUP = random.randint(1, 99)
+AREA = random.randint(900, 999)
 SERIAL = random.randint(1, 9999)
-DANGER = ["murder", "kill", "stab", "injure", "threat", "hurt", "ammunition",
-          "ammo", "explosives", "grenade", "bomb", "toxic", "gas", "poison",
-          "radioactive", "weapon", "gun", "guns", "massacre",
-          "shoot", "eliminate", "destroy", "threaten"]
+NLP = spacy.load("en_core_web_lg")
+MATRIX_STYLE = "\033[0;38;2;51;255;51m"
 NEGATION_WORDS = ["no", "not", "never", "n't"]
 HUMAN_KEYWORDS = ["human", "person", "people", "individual", "president", 
                   "leader", "counsel", "minister", "king", "monarch", 
                   "governor", "senator", "mayor"]
-NLP = spacy.load("en_core_web_lg")
+DANGER = ["murder", "kill", "stab", "injure", "threat", "hurt", "ammunition",
+          "ammo", "explosives", "grenade", "bomb", "toxic", "gas", "poison",
+          "radioactive", "weapon", "gun", "guns", "massacre",
+          "shoot", "eliminate", "destroy", "threaten"]
 
 # Declaring Standard Variables, Lists, Dictonaries, and Dependencies
+human_score = 0
+memory_list = []
+ssn_numbers = []
+ssn_registry = {}
+negation_score = 0
+current_scores = 0
+victim_and_perp = []
+perp_identity = None
+victim_identity = None
+memory_cycle_counter = 0
+sentiment_memory_list = []
 evidence_weights = {
     "intent": 0.15,
     "danger": 0.40,
     "negation": 0.25,
     "human": 0.20
 }
-ssn_registry = {}
-memory_list = []
-sentiment_memory_list = []
-victim_and_perp = []
-ssn_numbers = []
-negation_score = 0
-human_score = 0
-current_scores = 0
-memory_cycle_counter = 0
-perp_identity = None
-victim_identity = None
 
 # Print Typewriter effect
 def typewriter_print(text, delay=0.03, end="\n"):
@@ -144,7 +145,6 @@ def save_state():
     )
     if not has_saved_data:
         return
-
     state = {
         "memory_list": memory_list,
         "evidence_weights": evidence_weights,
@@ -157,7 +157,6 @@ def save_state():
 
     with open(STATE_FILE, "w", encoding="utf-8") as file:
         json.dump(state, file, indent=4)
-
 sarcasm_time = None 
 def calculate_score(text, perp=None, victim=None):
     global sarcasm_time
@@ -191,7 +190,7 @@ def calculate_score(text, perp=None, victim=None):
     difference = abs(new_calculated_score - average_score)
     
     if difference >= 50:
-        more_than_30_mins = (sarcasm_time is None) or (now - sarcasm_time > timedelta(minutes=30))
+        more_than_30_mins = (sarcasm_time is None) or (now - sarcasm_time > timedelta(minutes=60))
         valid_person = (perp is not None and perp in victim_and_perp) or (victim is not None and victim in victim_and_perp)
         if valid_person and more_than_30_mins:
             new_calculated_score *= -0.8
@@ -208,7 +207,7 @@ typewriter_print("[VERSION: 1.0.1]")
 # Memory Loading
 sia = SentimentIntensityAnalyzer()
 def retrieve_memories(memory_list, victim, perp):
-    if not victim or not perp: 
+    if not victim or not perp:
         return []
     return [
         memory
@@ -313,7 +312,6 @@ while True:
     spacy_tags = [(token.text, token.tag_) for token in doc]
     persons = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
     entities = ne_chunk(nltk_tags)
-    HUMAN_PRONOUN = []
 
     # Pronoun and Human Detection
     person_synset = wn.synset("person.n.01")
