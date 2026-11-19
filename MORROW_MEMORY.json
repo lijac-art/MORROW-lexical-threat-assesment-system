@@ -57,7 +57,7 @@
         }
     ],
     "evidence_weights": {
-        "intent": 0.1490746,
+        "intent": 0.1498509881,
         "danger": 0.3989246,
         "negation": 0.25,
         "human": 0.20025
