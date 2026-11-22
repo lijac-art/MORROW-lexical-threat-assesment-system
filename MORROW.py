@@ -27,13 +27,10 @@ NORM_CURRENT_WEIGHT = 0.6
 LARGE_LEARNING_RATE = 0.1
 IRRELEVANT_THRESHOLD = 60
 SMALL_LEARNING_RATE = 0.005
-GROUP = random.randint(1, 99)
-AREA = random.randint(900, 999)
-SERIAL = random.randint(1, 9999)
 NLP = spacy.load("en_core_web_lg")
 MATRIX_STYLE = "\033[0;38;2;51;255;51m"
 NEG_PREFIXES = ('un', 'in', 'im', 'il', 'ir', 'dis', 'non', 'mis', 'anti', 'de')
-NEGATION_WORDS = ["no", "not", "never", "n't", "none", "can't", "won't", "don't"]
+NEGATION_WORDS = ["no", "not", "never", "n't", "none", "can't", "won't"]
 HUMAN_KEYWORDS = ["human", "person", "people", "individual", "president", 
                   "leader", "counsel", "minister", "king", "monarch", 
                   "governor", "senator", "mayor"]
@@ -160,7 +157,7 @@ def save_state():
     with open(STATE_FILE, "w", encoding="utf-8") as file:
         json.dump(state, file, indent=4)
 sarcasm_time = None 
-def calculate_score(text, perp=None, victim=None):
+def calculate_score(text):
     global sarcasm_time
     now = datetime.now()
     scores = sia.polarity_scores(text)
@@ -296,6 +293,9 @@ while True:
     perp_identity = None
     is_human = False
     danger_word_found = False
+    GROUP = random.randint(1, 99)
+    AREA = random.randint(900, 999)
+    SERIAL = random.randint(1, 9999)
     shutdown_sequence()
 
     # Inputting Text
@@ -314,14 +314,6 @@ while True:
     persons = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
     entities = ne_chunk(nltk_tags)
 
-    # Prefix Negation Detection
-    def prefix_negation_check(word):
-        word_lower = word.lower()
-        for prefix in NEG_PREFIXES:
-            if word_lower.startswith(prefix) and len(word_lower) > len(prefix) + 2:
-                root = word_lower[len(prefix):]
-                if wn.synsets(root):
-                    NEGATION_WORDS.append(word)
 
     # Pronoun and Human Detection
     person_synset = wn.synset("person.n.01")
@@ -341,22 +333,49 @@ while True:
                     HUMAN_PRONOUN.append(child.text.lower())
                 elif token.dep_ == "pobj" and token.head.text.lower() == "as":
                     HUMAN_PRONOUN.append(token.head.head.text.lower())
-    for i, (word, tag) in enumerate(nltk_tags):
-        if danger_word_found and doc[i].lemma_.lower() in DANGER:
 
-            # Negation Handling
-            prefix_negation_check(doc[i])
-            start_index = max(0, i - LOOKBACK_WINDOW)
-            negation_word = 0
-            for prev_idx in range(i - 1, start_index - 1, -1):
-                prev_token = doc[prev_idx] 
-                prev_word = spacy_tags[prev_idx][0].lower()
-                if prev_word in NEGATION_WORDS:
-                    negation_word += 1
-                    if negation_word % 2 != 0:
-                        parent_word = doc[i].head
-                        if parent_word.pos_ == "VERB":
+    # Opposite Word Check
+    def opposite_word_check(word1, word2):
+            antonyms = set()
+            for syn in wn.synsets(word1):
+                for lemma in syn.lemmas():
+                    for antonym in lemma.antonyms():
+                        antonyms.add(antonym.name())
+            return word2 in antonyms
+
+    # Negation Handling
+    def negation_check(doc, i):
+        global negation_score, danger_word_score
+        start_index = max(0, i - LOOKBACK_WINDOW)
+        negation_word = 0
+        for prev_idx in range(i - 1, start_index - 1, -1):
+            prev_word = spacy_tags[prev_idx][0].lower()
+            if prev_word in NEGATION_WORDS:
+                negation_word += 1
+                if negation_word % 2 != 0:
+                    parent_word = doc[i].head
+                    if parent_word.pos_ == "VERB":
+                        if doc[i].lemma_.lower() in DANGER:
                             negation_score -= 30
+                        elif doc[i].pos_ == "VERB":
+                            if doc[i].lemma_.lower():
+                                for i in range(len(DANGER)):
+                                    if opposite_word_check(word.lower(), DANGER[i].lower()):
+                                        danger_word_score = min(danger_word_score + 80, 240)
+
+    # Prefix Negation Handling
+    def prefix_negation_check(word):
+            for prefix in NEG_PREFIXES:
+                if word.startswith(prefix) and len(word) > len(prefix) + 2:
+                    root = word[len(prefix):]
+                    if wn.synsets(root):
+                        NEGATION_WORDS.append(word)
+
+    # Main Natural Language Processing Loop
+    for i, (word, tag) in enumerate(nltk_tags):
+        prefix_negation_check(doc[words.index(word)].text)
+        negation_check(doc, i)
+        if danger_word_found and doc[i].lemma_.lower() in DANGER:
 
             # Non-Human Forward Subject Handling (Victim Check)
             human_found = False
